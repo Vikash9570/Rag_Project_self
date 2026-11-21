@@ -1,0 +1,23 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Secrets
+.env
+
+# Runtime data (uploads and vector index)
+backend/data/uploads/*
+backend/data/vector_db/*
+!backend/data/uploads/.gitkeep
+!backend/data/vector_db/.gitkeep
+
+# Misc
+.pytest_cache/
+.DS_Store

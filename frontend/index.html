@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG Q&A</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1c1f26; --muted: #6b7280;
+    --border: #e2e5ea; --accent: #4f46e5; --accent-hover: #4338ca;
+    --ok: #15803d; --err: #b91c1c; --src-bg: #f1f2f6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1115; --card: #181b22; --text: #e8eaf0; --muted: #9aa1ae;
+      --border: #2a2f3a; --accent: #818cf8; --accent-hover: #a5b4fc;
+      --ok: #4ade80; --err: #f87171; --src-bg: #20242e;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 1.35rem; margin: 0; }
+  .mode { font-size: 0.8rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 12px; }
+  .drop {
+    border: 2px dashed var(--border); border-radius: 10px; padding: 26px 12px;
+    text-align: center; color: var(--muted); cursor: pointer; transition: .15s;
+  }
+  .drop.over, .drop:hover { border-color: var(--accent); color: var(--accent); }
+  .drop input { display: none; }
+  .row { display: flex; gap: 10px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  button {
+    background: var(--accent); color: #fff; border: 0; border-radius: 8px;
+    padding: 9px 16px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .status { font-size: 0.88rem; color: var(--muted); }
+  .status.ok { color: var(--ok); } .status.err { color: var(--err); }
+  textarea {
+    width: 100%; min-height: 84px; resize: vertical; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--bg); color: var(--text); font: inherit;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  .answer { white-space: pre-wrap; min-height: 48px; }
+  .placeholder { color: var(--muted); font-style: italic; }
+  .sources { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+  .sources h3 { font-size: 0.78rem; color: var(--muted); margin: 0 0 8px; text-transform: uppercase; letter-spacing: .05em; }
+  .src { background: var(--src-bg); border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; margin-bottom: 6px; }
+  .src b { color: var(--muted); font-weight: 600; }
+  details { margin-top: 8px; }
+  summary { cursor: pointer; font-size: 0.82rem; color: var(--muted); }
+  .cfg { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; font-size: 0.85rem; }
+  .cfg input[type=text] {
+    flex: 1; min-width: 200px; padding: 7px 10px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--bg); color: var(--text); font: inherit;
+  }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; display: inline-block; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Ask your documents</h1>
+    <label class="mode"><input type="checkbox" id="demo" checked> Demo mode (no backend)</label>
+  </header>
+
+  <section class="card">
+    <h2>1 · Upload a document</h2>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".pdf,.txt,.md,.docx">
+      <span id="dropText">Click to choose a file or drag it here (PDF, TXT, MD, DOCX)</span>
+    </label>
+    <div class="row">
+      <button id="uploadBtn" disabled>Upload &amp; index</button>
+      <span class="status" id="uploadStatus"></span>
+    </div>
+    <details>
+      <summary>Backend settings</summary>
+      <div class="cfg">
+        <span>API base URL</span>
+        <input type="text" id="baseUrl" value="http://localhost:8000">
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>2 · Ask a question</h2>
+    <textarea id="question" placeholder="e.g. What are the key findings in this document?"></textarea>
+    <div class="row">
+      <button id="askBtn" disabled>Ask</button>
+      <span class="status" id="askStatus">Upload a document first.</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3 · Answer</h2>
+    <div class="answer" id="answer"><span class="placeholder">The answer will appear here.</span></div>
+    <div class="sources" id="sources" hidden>
+      <h3>Retrieved context</h3>
+      <div id="sourceList"></div>
+    </div>
+  </section>
+</div>
+
+<script>
+/*
+  Backend contract (build this in FastAPI/Flask):
+    POST {BASE}/upload   multipart/form-data, field "file"   -> { "message": "...", "chunks": 42 }
+    POST {BASE}/ask      JSON { "question": "..." }          -> { "answer": "...", "sources": [ { "text": "...", "source": "file.pdf", "page": 3 } ] }
+*/
+const $ = id => document.getElementById(id);
+const els = {
+  demo: $('demo'), file: $('file'), drop: $('drop'), dropText: $('dropText'),
+  uploadBtn: $('uploadBtn'), uploadStatus: $('uploadStatus'), baseUrl: $('baseUrl'),
+  question: $('question'), askBtn: $('askBtn'), askStatus: $('askStatus'),
+  answer: $('answer'), sources: $('sources'), sourceList: $('sourceList')
+};
+let indexed = false;
+
+const setStatus = (el, msg, cls = '', spin = false) => {
+  el.className = 'status ' + cls;
+  el.innerHTML = (spin ? '<span class="spinner"></span>' : '') + msg;
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const base = () => els.baseUrl.value.replace(/\/+$/, '');
+
+function pickFile(f) {
+  if (!f) return;
+  els.dropText.textContent = f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
+  els.uploadBtn.disabled = false;
+  indexed = false; els.askBtn.disabled = true;
+  setStatus(els.uploadStatus, '');
+  setStatus(els.askStatus, 'Upload a document first.');
+}
+els.file.addEventListener('change', () => pickFile(els.file.files[0]));
+['dragenter','dragover'].forEach(e => els.drop.addEventListener(e, ev => { ev.preventDefault(); els.drop.classList.add('over'); }));
+['dragleave','drop'].forEach(e => els.drop.addEventListener(e, ev => { ev.preventDefault(); els.drop.classList.remove('over'); }));
+els.drop.addEventListener('drop', ev => {
+  const f = ev.dataTransfer.files[0];
+  if (f) { els.file.files = ev.dataTransfer.files; pickFile(f); }
+});
+
+async function upload(file) {
+  if (els.demo.checked) { await sleep(900); return { message: 'Indexed (demo)', chunks: 12 }; }
+  const fd = new FormData(); fd.append('file', file);
+  const r = await fetch(base() + '/upload', { method: 'POST', body: fd });
+  if (!r.ok) throw new Error('Upload failed (' + r.status + ')');
+  return r.json();
+}
+
+async function ask(question) {
+  if (els.demo.checked) {
+    await sleep(1100);
+    return {
+      answer: 'This is a demo answer to: "' + question + '".\n\nSwitch off demo mode and point the API base URL at your backend to get real answers grounded in your document.',
+      sources: [
+        { text: 'Example retrieved chunk one. In a real run this is the passage the retriever matched.', source: 'demo.pdf', page: 2 },
+        { text: 'Example retrieved chunk two, ranked by similarity to your question.', source: 'demo.pdf', page: 5 }
+      ]
+    };
+  }
+  const r = await fetch(base() + '/ask', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question })
+  });
+  if (!r.ok) throw new Error('Request failed (' + r.status + ')');
+  return r.json();
+}
+
+els.uploadBtn.addEventListener('click', async () => {
+  const f = els.file.files[0]; if (!f) return;
+  els.uploadBtn.disabled = true;
+  setStatus(els.uploadStatus, 'Uploading and indexing…', '', true);
+  try {
+    const res = await upload(f);
+    indexed = true;
+    setStatus(els.uploadStatus, '✓ ' + (res.message || 'Indexed') + (res.chunks ? ' · ' + res.chunks + ' chunks' : ''), 'ok');
+    els.askBtn.disabled = false;
+    setStatus(els.askStatus, 'Ready.');
+  } catch (e) {
+    setStatus(els.uploadStatus, e.message, 'err');
+  } finally { els.uploadBtn.disabled = false; }
+});
+
+async function submitQuestion() {
+  const q = els.question.value.trim();
+  if (!q || !indexed) return;
+  els.askBtn.disabled = true;
+  setStatus(els.askStatus, 'Thinking…', '', true);
+  els.answer.innerHTML = '<span class="placeholder">Generating answer…</span>';
+  els.sources.hidden = true;
+  try {
+    const res = await ask(q);
+    els.answer.textContent = res.answer || '(empty answer)';
+    const src = res.sources || [];
+    if (src.length) {
+      els.sourceList.innerHTML = src.map(s =>
+        '<div class="src"><b>' + esc(s.source || 'source') + (s.page != null ? ' · p.' + esc(s.page) : '') + '</b><br>' + esc(s.text || '') + '</div>'
+      ).join('');
+      els.sources.hidden = false;
+    }
+    setStatus(els.askStatus, 'Done.', 'ok');
+  } catch (e) {
+    els.answer.innerHTML = '<span class="placeholder">No answer.</span>';
+    setStatus(els.askStatus, e.message, 'err');
+  } finally { els.askBtn.disabled = false; }
+}
+els.askBtn.addEventListener('click', submitQuestion);
+els.question.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submitQuestion(); });
+</script>
+</body>
+</html>
