@@ -57,6 +57,10 @@ class VectorStore():
             )
         ]
 
+    def has_document(self,doc_id: str)->bool:
+        res = self._col.get(where={"doc_id":doc_id},limit=1,include=[])
+        return len(res['ids'])>0
+
     def count(self) -> int:
         return self._col.count()
 

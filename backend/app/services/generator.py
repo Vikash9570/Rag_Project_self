@@ -32,13 +32,13 @@ from backend.app.schemas import AskResponse , AskRequest
 # this is build to get context and question on every question asked to feed llm
 def build_user_message(chunks, question):
     context = "\n\n".join(
-        f'<chunk id="{i+1}" source="{c["source"]}" page="{c.get("page","")}">\n{c["text"]}\n</chunk>'
+        f'<chunk id="{i+1}" source="{c["source"]}" page="{c.get("page","")}" similarity_distance="{c.get("distance","")}">\n{c["text"]}\n</chunk>'
         for i, c in enumerate(chunks)
     )
     return f"<context>\n{context}\n</context>\n\n<question>\n{question}\n</question>"
 
 #  initializing llm
-lru_cache(maxsize=1)
+@lru_cache(maxsize=1)
 def get_llm() -> ChatOpenAI:
     """Create the chat model on first use (not at import time) and reuse it afterwards."""
     return ChatOpenAI(
@@ -53,7 +53,7 @@ def answer(chunks, question):
         SystemMessage(content=system_prompt),
         HumanMessage(content=build_user_message(chunks, question)),
     ]
-    return get_llm().invoke(messages).content
+    return get_llm().invoke(messages)
     
 
 

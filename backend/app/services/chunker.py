@@ -17,5 +17,5 @@ def convertTochunks(documents:list[Document])->list[Document]:
         )
         return splitter.split_documents(documents)
     except Exception as e:
-        raise ModuleNotFoundError(f'error occured at convert to chunk: {e}')
+        print (f'error occured at convert to chunk: {e}')
 

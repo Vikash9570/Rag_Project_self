@@ -20,7 +20,7 @@ def load_document(local_path:str,source:str)->dict:
         # print(f"from root function pages {pages[0]}")
 
     except Exception as e:
-        print(f'error occured at loader.py while loading the pdf: {e}')
+        raise IngestionError(f'error occured at loader.py while loading the pdf: {e}')
 
     # adding metadata
     for page in pages:
