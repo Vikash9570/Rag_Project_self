@@ -60,35 +60,3 @@ frontend/index.html
 uv run pytest
 ```
 
-
-
-rag-app/
-├── frontend/
-│   └── index.html              # the file I built (rename from rag-frontend.html)
-│
-├── backend/
-│   ├── app/
-│   │   ├── main.py             # FastAPI app, CORS, router registration
-│   │   ├── config.py           # settings: model names, chunk size, paths, API keys (from env)
-│   │   ├── api/
-│   │   │   ├── upload.py       # POST /upload
-│   │   │   └── ask.py          # POST /ask
-│   │   ├── services/
-│   │   │   ├── loader.py       # read PDF/TXT/DOCX into raw text + page metadata
-│   │   │   ├── chunker.py      # split text into overlapping chunks
-│   │   │   ├── embedder.py     # text -> vectors
-│   │   │   ├── vector_store.py # add / search wrapper around Chroma or FAISS
-│   │   │   └── generator.py    # build the prompt, call the LLM, return answer
-│   │   └── schemas.py          # Pydantic request/response models
-│   ├── data/
-│   │   ├── uploads/            # raw uploaded files
-│   │   └── vector_db/          # persisted index
-│   ├── tests/
-│   │   ├── test_chunker.py
-│   │   └── test_retrieval.py
-│   └── requirements.txt
-│
-├── .env                        # secrets, never commit
-├── .env.example                # template with empty values, commit this
-├── .gitignore                  # .env, data/, __pycache__, .venv
-└── README.md

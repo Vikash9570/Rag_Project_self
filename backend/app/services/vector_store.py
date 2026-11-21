@@ -18,9 +18,13 @@ class VectorStore():
 
     def _make_collection(self):
         # cosine distance: 0 = identical, larger = less similar
-        return self._client.get_or_create_collection(
-            self._name, metadata={"hnsw:space": "cosine"}
-        )
+        try:    
+            return self._client.get_or_create_collection(
+                self.coll_name, metadata={"hnsw:space": "cosine"}
+            )
+        except Exception as e:
+            print(f"error occured at vector_store/make_collection {e}")
+            raise
 
     def add(self, texts: list[str], metadatas: list[dict]) -> None:
         try:
@@ -34,7 +38,7 @@ class VectorStore():
                 for t, m in zip(texts, clean)
             ]
             self._col.upsert(
-                ids=ids, documents=texts, embeddings=self._embed(texts), metadatas=clean
+                ids=ids, documents=texts, embeddings=self._embd_fn(texts), metadatas=clean
             )
         except Exception as e:
             print(f"error occured at add func in vector store while adding id: {e}")
@@ -44,7 +48,7 @@ class VectorStore():
         if n == 0:
             return []
         res = self._col.query(
-            query_embeddings=self._embed([query]), n_results=min(k, n)
+            query_embeddings=self._embd_fn([query]), n_results=min(k, n)
         )
         return [
             {"text": t, "metadata": m, "distance": d}
