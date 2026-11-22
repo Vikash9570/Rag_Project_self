@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import ask, upload
-from app.config import settings
+from backend.app.api import ask, upload
+from backend.app.config import settings
 
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
 settings.vector_db_dir.mkdir(parents=True, exist_ok=True)

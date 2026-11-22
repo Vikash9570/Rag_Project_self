@@ -1,11 +1,16 @@
 from fastapi import APIRouter, HTTPException
 
-from app.schemas import AskRequest, AskResponse
+from backend.app.schemas import AskRequest, AskResponse
+from backend.app.services import rag_pipeline
 
 router = APIRouter()
 
 
 @router.post("/ask", response_model=AskResponse)
-async def ask(req: AskRequest) -> AskResponse:
-    # TODO: embedder(question) -> vector_store.search -> generator -> answer + sources
-    raise HTTPException(status_code=501, detail="Ask pipeline not implemented yet")
+def ask_endpoint(req: AskRequest) -> AskResponse:
+    try:
+        result = rag_pipeline.ask(req.question)
+        return AskResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=501, detail=f"Ask pipeline not implemented yet{e}")
+    
