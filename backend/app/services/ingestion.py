@@ -3,6 +3,7 @@ import hashlib
 from pathlib import Path
 from backend.app.services.vector_store import VectorStore
 from backend.app.services import loader, chunker
+from backend.app.services.embedder import get_embeddings
 from backend.exception import IngestionError
 
 def file_hash(path: Path) -> str:
@@ -32,7 +33,7 @@ def ingest(path: str,store: VectorStore) -> dict:
                 "chunks_added":0,"skipped": True}
 
     # 3. Load: use your PDF/DOCX loader to get pages or sections of text
-    
+
     pages = loader.load_document(local_path=str(file_path),source=file_path.name)
     if not pages:
         raise FileNotFoundError(f"loader failed to load file from path in ingestion: {file_path}")
@@ -59,5 +60,7 @@ def ingest(path: str,store: VectorStore) -> dict:
         ids.append(f"{doc_id}-{i}")
     # 6. Embed + store: add chunks to the vector store using those ids
 
+    VectorStore.add(texts=texts,metadatas=metadatas,ids=ids)
+
     # 7. Return a summary
-    return {"doc_id": doc_id, "filename": path.name, "chunks_added": ...}
+    return {"doc_id": doc_id, "filename": path.name, "chunks_added": texts[0][:10]}
