@@ -1,8 +1,9 @@
 # services/ingestion.py
 import hashlib
 from pathlib import Path
-from vector_store import VectorStore
+from backend.app.services.vector_store import VectorStore
 from backend.app.services import loader, chunker
+from backend.exception import IngestionError
 
 def file_hash(path: Path) -> str:
     # Hash the file bytes (sha256). This identifies "the same document"
@@ -31,21 +32,31 @@ def ingest(path: str,store: VectorStore) -> dict:
                 "chunks_added":0,"skipped": True}
 
     # 3. Load: use your PDF/DOCX loader to get pages or sections of text
-    pages = loader(str(file_path))
+    
+    pages = loader.load_document(local_path=str(file_path),source=file_path.name)
     if not pages:
         raise FileNotFoundError(f"loader failed to load file from path in ingestion: {file_path}")
     # 4. Chunk: split with your splitter (size, overlap)
-    chunks = chunker(pages)
+
+    chunks = chunker.convertTochunks(pages)
     if not chunks:
-        print("error occured at ingestion")
-        raise 
+        print("error occured at ingestion while chunking")
+        raise IngestionError("no chunks produced in ingestion")
 
     # 5. Attach metadata to every chunk:
     #    doc_id, source (filename), page, chunk_index
     #    Build a deterministic chunk id: f"{doc_id}-{chunk_index}"
-    for chunk in chunks:
-        chunk['meta']
 
+    #  3 parallel list help to get the ids and metadata in order if any things less in no. this mismatch happen
+    texts, metadatas, ids = [], [], []
+    for i, chunk in enumerate(chunks):
+        chunk.metadata['doc_id'] = doc_id
+        chunk.metadata['source'] = file_path.name
+        chunk.metadata['chunk_index'] = i
+
+        texts.append(chunk.page_content)
+        metadatas.append(chunk.metadata)
+        ids.append(f"{doc_id}-{i}")
     # 6. Embed + store: add chunks to the vector store using those ids
 
     # 7. Return a summary
