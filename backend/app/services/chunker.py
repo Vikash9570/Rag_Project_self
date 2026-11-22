@@ -3,6 +3,7 @@
 from backend.app.config import settings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from backend.exception import IngestionError
 
 # defining text splitter
 
@@ -17,5 +18,5 @@ def convertTochunks(documents:list[Document])->list[Document]:
         )
         return splitter.split_documents(documents)
     except Exception as e:
-        print (f'error occured at convert to chunk: {e}')
+        raise  IngestionError(f'error occured at convert to chunk: {e}')
 

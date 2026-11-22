@@ -3,16 +3,17 @@
 from langchain_huggingface import HuggingFaceEmbeddings
 from backend.app.config import settings
 from functools import lru_cache
+from backend.exception import ConfigurationError
 
 
-@lru_cache(max=1)
+@lru_cache(maxsize=1)
 def get_embeddings()->HuggingFaceEmbeddings:
     try:
         return HuggingFaceEmbeddings(
         model_name=settings.embedding_model,
         )
     except Exception as e:
-        print(f'exception occured at getting embeddings module with error: {e}')
+        raise ConfigurationError(f'exception occured at getting embeddings module with error: {e}')
 
     
 

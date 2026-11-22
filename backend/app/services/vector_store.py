@@ -1,9 +1,6 @@
 """Thin wrapper around Chroma: add chunks, search top-k, reset the index."""
 
-from langchain_core.vectorstores import VectorStore
 import chromadb
-from backend.app.services.embedder import get_embeddings
-from backend.app.config import settings
 from pathlib import Path
 
 
@@ -14,6 +11,7 @@ class VectorStore():
         self._client = chromadb.PersistentClient(path=str(persist_dir))
         self.coll_name = name
         self._col = self._make_collection()
+
 
     def _make_collection(self):
         # cosine distance: 0 = identical, larger = less similar
@@ -43,12 +41,12 @@ class VectorStore():
         if n == 0:
             return []
         res = self._col.query(
-            query_embeddings=self._embd_fn.embed_documents([query]), n_results=min(k, n)
+            query_embeddings=self._embd_fn.embed_query(query), n_results=min(k, n)
         )
         return [
-            {"text": t, "metadata": m, "distance": d}
-            for t, m, d in zip(
-                res["documents"][0], res["metadatas"][0], res["distances"][0]
+            {"text": t, "metadata": m, "distance": d, "source": s}
+            for t, m, d, s in zip(
+                res["documents"][0], res["metadatas"][0], res["distances"][0], res["source"][0]
             )
         ]
 
@@ -60,7 +58,7 @@ class VectorStore():
         return self._col.count()
 
     def reset(self) -> None:
-        self._client.delete_collection(self._name)
+        self._client.delete_collection(self.coll_name)
         self.coll_name = self._make_collection()
 
      
