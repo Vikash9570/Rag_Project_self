@@ -2,7 +2,9 @@
 
 import chromadb
 from pathlib import Path
-
+from functools import lru_cache
+from backend.app.config import settings
+from backend.app.services.embedder import get_embeddings 
 
 
 class VectorStore():
@@ -44,9 +46,9 @@ class VectorStore():
             query_embeddings=self._embd_fn.embed_query(query), n_results=min(k, n)
         )
         return [
-            {"text": t, "metadata": m, "distance": d, "source": s}
-            for t, m, d, s in zip(
-                res["documents"][0], res["metadatas"][0], res["distances"][0], res["source"][0]
+            {"text": t, "metadata": m, "distance": d, "source": m.get("source")}
+            for t, m, d in zip(
+                res["documents"][0], res["metadatas"][0], res["distances"][0]
             )
         ]
 
@@ -59,6 +61,9 @@ class VectorStore():
 
     def reset(self) -> None:
         self._client.delete_collection(self.coll_name)
-        self.coll_name = self._make_collection()
+        self._coll = self._make_collection()
 
      
+@lru_cache(maxsize=1)
+def get_store()->VectorStore:
+    return VectorStore(get_embeddings(),settings.vector_db_dir,settings.collection_name)

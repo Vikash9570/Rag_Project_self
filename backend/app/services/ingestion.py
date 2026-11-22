@@ -61,4 +61,4 @@ def ingest(path: str,store: VectorStore) -> dict:
     # 6. Embed + store: add chunks to the vector store using those ids
     store.add(texts=texts,metadatas=metadatas,ids=ids)
     # 7. Return a summary
-    return {"doc_id": doc_id, "filename": path.name, "chunks_added": len(chunks), "skipped":False}
+    return {"doc_id": doc_id, "filename": path, "chunks_added": len(chunks), "skipped":False}
