@@ -18,4 +18,4 @@ class Source(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
-    cited_ids: list[int]
+    cited_ids: list[str]

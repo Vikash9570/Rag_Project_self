@@ -12,7 +12,7 @@ router = APIRouter()
 @router.post("/upload", response_model=UploadResponse)
 def upload_endpoint(file: UploadFile = File(...)) -> UploadResponse:
     # validating if not pdf file
-    if file.filename.suffix.lower() not in ('.pdf') or not file.filename:
+    if not file.filename or Path(file.filename).suffix.lower() != ".pdf":
         raise HTTPException(status_code=400, detail="Upload file is not .pdf")
 
     # saving to upload_dir
@@ -28,7 +28,7 @@ def upload_endpoint(file: UploadFile = File(...)) -> UploadResponse:
     finally:
         file.file.close()
 
-    summary = ingestion.ingest(config.settings.upload_dir, vector_store.get_store())
+    summary = ingestion.ingest(str(destination), vector_store.get_store())
 
     if not summary:
         raise HTTPException(status_code=501, detail="Upload pipeline not implemented yet")

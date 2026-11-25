@@ -15,7 +15,10 @@ def ask(question: str, k: int = 4) -> dict:
     # 2. Guard: if nothing relevant came back, return early
     #    (decide: empty list? a similarity score threshold?)
     if not chunks:
-        return {"answer": "I couldn't find this in the provided documents.", "sources": []}
+        return {
+            "answer": "I couldn't find this in the provided documents.",
+            "cited_ids": [],
+        }
 
     # 4. Call the LLM: SystemMessage + HumanMessage via get_llm().invoke(...)
    
@@ -23,9 +26,11 @@ def ask(question: str, k: int = 4) -> dict:
     # 5. Return a structured result, not just a string
 
     return {
-        "answer": response,
-        "sources": [response],   # source file, page, chunk id
+        "answer": response.answer,
+        "cited_ids": [
+            f"{chunk['metadata']['doc_id']}-{chunk['metadata']['chunk_index']}"
+            for chunk in chunks
+        ],
     }
-
 
     

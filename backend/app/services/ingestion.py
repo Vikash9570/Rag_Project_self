@@ -21,7 +21,7 @@ def ingest(path: str,store: VectorStore) -> dict:
     if not file_path.is_file():
         raise FileNotFoundError(f"Folder does not exist: {file_path}")
 
-    if file_path.suffix.lower() not in {".pdf",".docx"}:
+    if file_path.suffix.lower() not in {".pdf"}:
         raise ValueError(f"unsupported filr type'{file_path.suffix}'. expected .pdf")
 
     # 2. Idempotency check: compute the hash and ask the vector store
