@@ -49,12 +49,14 @@ def get_llm() -> ChatOpenAI:
 
 
 def answer(chunks, question):
-    messages = [
-        SystemMessage(content=system_prompt),
-        HumanMessage(content=build_user_message(chunks, question)),
-    ]
-    return get_llm().invoke(messages)
-    
+    try:
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(content=build_user_message(chunks, question)),
+        ]
+        return get_llm().invoke(messages)
+    except Exception as e:
+        print(f"error occured at generator/answer {e}")
 
 
 if __name__=='__main__':
